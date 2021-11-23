@@ -20,37 +20,38 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SchedulerTest {
 
-    private static final Instant T0 = Instant.now();
+    private static final Instant I0 = Instant.now();
 
     // Subject Under Test
     private Scheduler scheduler = new Scheduler();
 
     @BeforeEach
     void setUp() {
-        Action.clock = Clock.fixed(T0, ZoneOffset.UTC);
+        Action.clock = Clock.fixed(I0, ZoneOffset.UTC);
     }
 
     @Test
     void enqueueArgumentIsValidated() {
         var exception = assertThrows(NullPointerException.class, () -> scheduler.enqueue(null));
         assertEquals("required argument 'actions' is null", exception.getMessage());
-        var actions = List.of(new ActionForTesting(Duration.ZERO));
+        var actions = List.of(new ConcreteAction(Duration.ZERO));
         assertDoesNotThrow(() -> scheduler.enqueue(actions));
+        assertEquals(1, scheduler.getQueueSize());
     }
 
     @ParameterizedTest(name = "{index}: {0}")
     @MethodSource("scheduledActionsAreExecutedOnTimeArguments")
     void scheduledActionsAreExecutedOnTime(String name, Collection<Duration> durations, List<Integer> runsSize) {
-        var actions = durations.stream().map(ActionForTesting::new).collect(Collectors.toList());
+        var actions = durations.stream().map(ConcreteAction::new).collect(Collectors.toList());
         scheduler.enqueue(actions);
         assertEquals(actions.size(), scheduler.getQueueSize());
 
-        Instant t = T0; // Set t to T0
+        Instant instant = I0; // Set t to I0
         for(Integer runSize: runsSize) {
-            Action.clock = Clock.fixed(t, ZoneOffset.UTC); // Set clock to time t.
+            Action.clock = Clock.fixed(instant, ZoneOffset.UTC); // Set clock to time t.
             var run = scheduler.execute();
             assertEquals(runSize, run.size(), "");
-            t = t.plusSeconds(1); // Move time 1 second forward
+            instant = instant.plusSeconds(1); // Move time 1 second forward
         }
         assertEquals(0, scheduler.getQueueSize());
     }
@@ -62,13 +63,19 @@ class SchedulerTest {
                 Arguments.of("Two immediate", List.of(Duration.ZERO, Duration.ZERO), List.of(2)),
                 Arguments.of("Two immediate, one after 5 seconds",
                         List.of(Duration.ZERO, Duration.ZERO, Duration.ofSeconds(5)),
-                        List.of(2, 0, 0, 0, 0, 1))
+                        List.of(2, 0, 0, 0, 0, 1)),
+                Arguments.of("One immediate, one after 3 seconds and 1 after 5 seconds",
+                        List.of(Duration.ZERO, Duration.ofSeconds(3), Duration.ofSeconds(5)),
+                        List.of(1, 0, 0, 1, 0, 1)),
+                Arguments.of("Unordered",
+                        List.of(Duration.ofSeconds(5), Duration.ZERO, Duration.ofSeconds(3)),
+                        List.of(1, 0, 0, 1, 0, 1))
         );
     }
 
-    private static class ActionForTesting extends Action {
+    private static final class ConcreteAction extends Action {
 
-        public ActionForTesting(Duration duration) {
+        public ConcreteAction(Duration duration) {
             super(duration);
         }
 

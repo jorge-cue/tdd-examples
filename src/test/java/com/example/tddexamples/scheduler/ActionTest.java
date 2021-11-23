@@ -56,12 +56,12 @@ class ActionTest {
     void delayDecreasesWhenClockMovesForward(final String name, final Duration duration, final Long seconds) {
         var action = new ActionForTest(duration);
         Long s = seconds;
-        Instant i = I0;
+        Instant i = I0; // Action.clock was set to I0 at startUp!!!
         do {
             assertEquals(s, action.getDelay(TimeUnit.SECONDS));
-            i = i.plusSeconds(1L);
+            i = i.plusSeconds(1L); // Move clock one second forward
             Action.clock = Clock.fixed(i, ZoneOffset.UTC);
-            s = s - 1;
+            s = s - 1; // delay must lower by one second
         } while(s >= 0);
     }
 
@@ -85,8 +85,8 @@ class ActionTest {
     static Stream<Arguments> actionOrderIsByDelayArguments() {
         return Stream.of(
                 Arguments.of("Simultaneous", Duration.ofSeconds(1), Duration.ofSeconds(1), 0),
-                Arguments.of("One before two", Duration.ofSeconds(1), Duration.ofSeconds(2), -1),
-                Arguments.of("Two before one", Duration.ofSeconds(2), Duration.ofSeconds(1), 1)
+                Arguments.of("One before two", Duration.ofSeconds(1), Duration.ofSeconds(3), -1),
+                Arguments.of("Two before one", Duration.ofSeconds(5), Duration.ofSeconds(2), 1)
         );
     }
 
