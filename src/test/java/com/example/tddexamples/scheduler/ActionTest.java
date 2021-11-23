@@ -42,19 +42,11 @@ class ActionTest {
     @Test
     void compareToArgumentIsValidated() {
         var action = new ActionForTest(Duration.ZERO);
+        //noinspection ResultOfMethodCallIgnored
         var exception1 = assertThrows(NullPointerException.class, () -> action.compareTo(null));
         assertEquals("required argument 'other' is null", exception1.getMessage());
-        var other = new Delayed() {
-            @Override
-            public long getDelay(TimeUnit timeUnit) {
-                return 0;
-            }
-
-            @Override
-            public int compareTo(Delayed delayed) {
-                return 0;
-            }
-        };
+        var other = new NonActionDelayed();
+        //noinspection ResultOfMethodCallIgnored
         var exception2 = assertThrows(IllegalArgumentException.class, () -> action.compareTo(other));
         assertEquals("argument 'other' is not an Action", exception2.getMessage());
     }
@@ -106,6 +98,18 @@ class ActionTest {
 
         @Override
         public void run() {
+        }
+    }
+
+    private static class NonActionDelayed implements Delayed {
+        @Override
+        public long getDelay(TimeUnit timeUnit) {
+            return 0;
+        }
+
+        @Override
+        public int compareTo(Delayed delayed) {
+            return 0;
         }
     }
 }

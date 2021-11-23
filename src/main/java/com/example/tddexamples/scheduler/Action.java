@@ -29,13 +29,13 @@ public abstract class Action implements Delayed, Runnable {
 
     /**
      * Gets remaining time to run the Action expressed in number of units.
-     * 
+     *
      * @param units Units for compute the remaining delay.
      * @return remaining delay in terms of unit.
      * @throws NullPointerException is units is null.
      */
     @Override
-    public long getDelay(TimeUnit units) {
+    public final long getDelay(TimeUnit units) {
         checkNotNull(units, "required argument 'units' is null");
         return units.convert(runInstant.toEpochMilli() - clock.millis(), TimeUnit.MILLISECONDS);
     }
@@ -43,10 +43,10 @@ public abstract class Action implements Delayed, Runnable {
     /**
      *
      * @param other Must be an Action superclass.
-     * @return
+     * @return Result of comparing this with other.
      */
     @Override
-    public int compareTo(Delayed other) {
+    public final int compareTo(Delayed other) {
         checkNotNull(other, "required argument 'other' is null");
         checkArgument(other instanceof Action, "argument 'other' is not an Action");
         return this.runInstant.compareTo(((Action) other).runInstant);
